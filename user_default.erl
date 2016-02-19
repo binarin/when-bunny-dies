@@ -14,6 +14,10 @@ ensure_ets() ->
     end,
     ok.
 
+focus(Kind) ->
+    [{Kind, Data}] = ets:lookup(when_bunny_dies, Kind),
+    Data.
+
 focus(Kind, Data) ->
     ensure_ets(),
     ets:insert(when_bunny_dies, {Kind, Data}).
@@ -32,3 +36,28 @@ peer_port_conn(Port) ->
                        element(2, hd(rabbit_reader:info(Pid, [peer_port]))) =:= Port]),
     focus(connection, Conn),
     Conn.
+
+color(red) ->
+    "\e[31m";
+color(green) ->
+    "\e[32m";
+color(default) ->
+    "\e[39m".
+
+color_print(String, Color) ->
+    io:format("~s~s~s", [color(Color), String, color(default)]).
+
+format_table(Data) ->
+    NameWidth = lists:max([ byte_size(atom_to_binary(Key, utf8)) || {Key, _} <- Data ]),
+    [ begin
+          color_print(Key, green),
+          io:format("~s~p~n", [lists:duplicate(2 + NameWidth - byte_size(atom_to_binary(Key, utf8)), 32),
+                               Value])
+      end
+      || {Key, Value} <- Data ].
+
+conn_info() ->
+    conn_info(focus(connection)).
+
+conn_info(Pid) when is_pid(Pid) ->
+    format_table(rabbit_reader:info(Pid)).
