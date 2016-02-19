@@ -81,3 +81,9 @@ conn_channels(Conn) when is_pid(Conn) ->
                  || {_, Sup, _, _} <- ChannelSups ],
     focus(channel, hd(Channels)),
     Channels.
+
+chan_info() ->
+    chan_info(focus(channel)).
+
+chan_info(Chan) when is_pid(Chan) ->
+    format_table(gen_server2:call(Chan, info)).
