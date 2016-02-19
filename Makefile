@@ -16,4 +16,4 @@ C=$(shell rabbitmqctl eval "erlang:get_cookie()."| perl -pe "s/^'|'\$$//g")
 TICK=$(shell rabbitmqctl eval "net_kernel:get_net_ticktime()."| perl -pe "s/^'|'\$$//g")
 
 shell: all
-	erl -hidden -pa $(shell pwd)/ebin -sname shell-$$$$ -remsh "${N}" -setcookie "${C}" -kernel net_ticktime "${TICK}" -eval "{Module, Binary, Filename} = code:get_object_code(user_default), rpc:call('${N}', code, load_abs, [\"${ROOT}/ebin/user_default\"])."
+	erl -hidden -pa $(shell pwd)/ebin -sname shell-$$$$ -remsh "${N}" -setcookie "${C}" -kernel net_ticktime "${TICK}" -eval "rpc:call('${N}', code, purge, [user_default]), rpc:call('${N}', code, load_abs, [\"${ROOT}/ebin/user_default\"])."
