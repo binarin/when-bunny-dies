@@ -54,10 +54,22 @@ format_table(Data) ->
           io:format("~s~p~n", [lists:duplicate(2 + NameWidth - byte_size(atom_to_binary(Key, utf8)), 32),
                                Value])
       end
-      || {Key, Value} <- Data ].
+      || {Key, Value} <- Data ],
+    ok.
 
 conn_info() ->
     conn_info(focus(connection)).
 
 conn_info(Pid) when is_pid(Pid) ->
     format_table(rabbit_reader:info(Pid)).
+
+channel_sup_sup_pid() ->
+    channel_sup_sup_pid(focus(connection)).
+channel_sup_sup_pid(Conn) ->
+    {_, _, State} = sys:get_state(Conn),
+    element(13, State).
+
+conn_channels() ->
+    conn_channels(focus(connection));
+conn_channels(Conn) when is_pid(Conn) ->
+    supervisor2:which_children(channel_sup_sup_pid(Conn)).
