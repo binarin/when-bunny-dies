@@ -73,4 +73,11 @@ conn_channels() ->
     conn_channels(focus(connection)).
 
 conn_channels(Conn) when is_pid(Conn) ->
-    supervisor2:which_children(channel_sup_sup_pid(Conn)).
+    ChannelSups = supervisor2:which_children(channel_sup_sup_pid(Conn)),
+    Channels = [ begin
+                     {_, Chan, _, _} = lists:keyfind(channel, 1, supervisor2:which_children(Sup)),
+                     Chan
+                 end
+                 || {_, Sup, _, _} <- ChannelSups ],
+    focus(channel, hd(Channels)),
+    Channels.
