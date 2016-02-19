@@ -9,6 +9,6 @@ queue(Name) ->
     Q.
 
 qpid(Name) when is_atom(Name) ->
-    qpid(queue(Name);
+    qpid(queue(Name));
 qpid(#amqqueue{pid = Pid}) ->
     Pid.
