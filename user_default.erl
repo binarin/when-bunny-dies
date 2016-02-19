@@ -70,6 +70,7 @@ channel_sup_sup_pid(Conn) ->
     element(13, State).
 
 conn_channels() ->
-    conn_channels(focus(connection));
+    conn_channels(focus(connection)).
+
 conn_channels(Conn) when is_pid(Conn) ->
     supervisor2:which_children(channel_sup_sup_pid(Conn)).
