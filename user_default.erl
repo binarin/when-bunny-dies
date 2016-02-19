@@ -5,4 +5,10 @@
 -include_lib("rabbitmq_server/include/rabbit_framing.hrl").
 
 queue(Name) ->
-    rabbit_misc:dirty_read({rabbit_queue, {resource, <<"/">>, queue, atom_to_binary(Name, utf8)}}).
+    {ok, Q} = rabbit_misc:dirty_read({rabbit_queue, {resource, <<"/">>, queue, atom_to_binary(Name, utf8)}}),
+    Q.
+
+qpid(Name) when is_atom(Name) ->
+    qpid(queue(Name);
+qpid(#amqqueue{pid = Pid}) ->
+    Pid.
