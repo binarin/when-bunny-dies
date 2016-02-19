@@ -87,3 +87,18 @@ chan_info() ->
 
 chan_info(Chan) when is_pid(Chan) ->
     format_table(gen_server2:call(Chan, info)).
+
+chan_state() ->
+    chan_state(focus(channel)).
+
+chan_state(Chan) when is_pid(Chan) ->
+    {gs2_state, _, _, State, _, _, _, _, _, _} = sys:get_state(Chan),
+    State.
+
+chan_consumers() ->
+    chan_consumers(focus(channel)).
+
+chan_consumers(Chan) when is_pid(Chan) ->
+    State = chan_state(Chan),
+    ConsumerMapping = element(18, State),
+    ConsumerMapping.
