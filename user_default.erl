@@ -103,13 +103,13 @@ chan_consumers(Chan) when is_pid(Chan) ->
     ConsumerMapping = element(18, State),
     dict:to_list(ConsumerMapping).
 
-chan_queue_monitors() ->
+ch_queue_monitors() ->
     chan_queue_monitors(focus(channel)).
 
-chan_queue_monitors(Chan) ->
+ch_queue_monitors(Chan) ->
     State = chan_state(Chan),
-    ConsumerMapping = element(18, State),
-    ConsumerMapping.
+    QueueMonitors = element(17, State),
+    QueueMonitors.
 
 ch_queue_consumers() ->
     ch_queue_consumers(focus(channel)).
