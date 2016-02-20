@@ -110,3 +110,11 @@ chan_queue_monitors(Chan) ->
     State = chan_state(Chan),
     ConsumerMapping = element(18, State),
     ConsumerMapping.
+
+ch_queue_consumers() ->
+    ch_queue_consumers(focus(channel)).
+
+ch_queue_consumers(Chan) when is_pid(Chan) ->
+    State = chan_state(Chan),
+    QueueConsumers = element(19, State),
+    QueueConsumers.
