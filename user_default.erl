@@ -118,3 +118,11 @@ ch_queue_consumers(Chan) when is_pid(Chan) ->
     State = chan_state(Chan),
     QueueConsumers = element(19, State),
     QueueConsumers.
+
+ch_queue_names() ->
+    ch_queue_names(focus(channel)).
+
+ch_queue_names(Chan) when is_pid(Chan) ->
+    State = chan_state(Chan),
+    QueueNames = element(16, State),
+    QueueNames.
