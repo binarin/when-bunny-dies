@@ -104,7 +104,7 @@ chan_consumers(Chan) when is_pid(Chan) ->
     dict:to_list(ConsumerMapping).
 
 ch_queue_monitors() ->
-    chan_queue_monitors(focus(channel)).
+    ch_queue_monitors(focus(channel)).
 
 ch_queue_monitors(Chan) ->
     State = chan_state(Chan),
