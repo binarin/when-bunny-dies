@@ -1,8 +1,83 @@
 -module(user_default).
 
 -compile([export_all]).
--include_lib("rabbitmq_server/include/rabbit.hrl").
--include_lib("rabbitmq_server/include/rabbit_framing.hrl").
+%% -include_lib("rabbitmq_server/include/rabbit.hrl").
+%% -include_lib("rabbitmq_server/include/rabbit_framing.hrl").
+-include_lib("amqp_client/include/amqp_client.hrl").
+
+
+with_connection(Params, Name, F) ->
+    {ok, C} = amqp_connection:start(Params, Name),
+    try F(C) of
+        V -> V
+    after
+        amqp_connection:close(C)
+    end.
+
+
+dump_term(Dir, File, Term) ->
+    file:write_file(Dir ++ "/" ++ File, io_lib:format("~p~n", [Term])).
+
+
+dump_routing(Path, Exchange, RKey) ->
+    mnesia:dump_to_textfile(Path ++ "/01-mnesia.dump"),
+    dump_term(Path, "02-bindings.txt", rabbit_binding:list(<<"/">>)),
+    dump_term(Path, "02-exchanges.txt", rabbit_exchange:list()),
+    AllQueues = rabbit_amqqueue:list(),
+    dump_term(Path, "03-queues.txt", AllQueues),
+    DirectRouteAttempt = rabbit_exchange_type_topic:route(
+                           #exchange{name=rabbit_misc:r(<<"/">>, exchange, Exchange)},
+                           #delivery{message=#basic_message{routing_keys=[RKey]}}),
+    dump_term(Path, "04-direct-route.txt", DirectRouteAttempt),
+    RoutedQueues = lists:filter(fun(It) -> lists:member(It#amqqueue.name, DirectRouteAttempt) end, AllQueues),
+    dump_term(Path, "05-direct-route-queues.txt", RoutedQueues),
+    RoutedQueueInfo = lists:map(fun rabbit_amqqueue:info/1, RoutedQueues),
+    dump_term(Path, "06-direct-route-queues-liveness.txt", RoutedQueueInfo).
+
+trace_routing(FileName, Exchange, RKey) ->
+    {ok, Dev} = file:open(FileName, [write]),
+    try
+        trace_routing1(Dev, Exchange, RKey)
+    after
+        timer:sleep(3000),
+        file:close(Dev)
+    end.
+
+trace_routing1(TraceDev, Exchange, RKey) ->
+    with_connection(#amqp_params_direct{}, <<"trace_routing_test">>,
+                    fun(C) ->
+                            {ok, Ch} = amqp_connection:open_channel(C),
+                            MRef = erlang:monitor(process, Ch),
+                            [ChPid] = [ proplists:get_value(pid, I) || X <- rabbit_channel:list(),
+                                                                       node(X) == node(),
+                                                                       I <- [rabbit_channel:info(X)],
+                                                                       proplists:get_value(connection, I) == C ],
+                            recon_trace:calls({'_', '_', [{'_',[],[{return_trace}]}]},
+                                              1000,
+                                              [{pid, ChPid}
+                                              ,{io_server, TraceDev}
+                                              ,{scope, local}
+                                              ]),
+                            amqp_channel:register_confirm_handler(Ch, self()),
+                            amqp_channel:register_return_handler(Ch, self()),
+                            amqp_channel:call(Ch, #'confirm.select'{}),
+                            Payload = <<"test">>,
+                            Publish = #'basic.publish'{exchange = Exchange,
+                                                       routing_key = RKey,
+                                                       mandatory = true},
+                            amqp_channel:cast(Ch, Publish, #amqp_msg{payload = Payload}),
+                            receive
+                                {#'basic.return'{}, _} ->
+                                    receive
+                                        #'basic.ack'{} -> ok
+                                    end,
+                                    not_routed;
+                                #'basic.ack'{} ->
+                                    routed;
+                                {'DOWN', _, _, _, Err} ->
+                                    {failed, Err}
+                            end
+                    end).
 
 ensure_ets() ->
     case catch ets:new(when_bunny_dies, [public, named_table]) of
