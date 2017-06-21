@@ -1,0 +1,48 @@
+* when-bunny-dies - some simple tools for rabbit debugging
+** Prerequisites and warnings
+
+   Directory where this tool is downloaded should be readable by
+   rabbitmq user. It'll inject some code into a running broker
+   instance. This code shouldn't interfere with regular rabbitmq
+   functioning. To purge it RabbitMQ needs to be restarted.
+
+** Connecting to broker
+
+   Establishing proper long-lived connection to RabbitMQ node requires
+   knowing nodename, erlang cookie and net ticktime. By default
+   Makefile tries to automatically get them using ~rabbitmqctl~, and
+   it should work most of the time.
+
+   But all this parameters can be manually set using ~make~ parameters like this:
+
+   #+BEGIN_SRC sh
+   make shell N=nodename T=netticktime C=erlang-cookie
+   #+END_SRC
+
+** Interactive shell
+
+   #+BEGIN_SRC sh
+   make shell
+   #+END_SRC
+
+   After running this command you'll get an interactive erlang shell
+   to a running rabbitmq instance. Various helper functions from
+   ~user_default.erl~ will be available here.
+
+** Debugging routing problems
+
+   There are some tools to debug an issue when exchange/queue/bindings
+   exists, but messages are not being routed to a queue.
+
+   First command perform tracing of message routing process (works better when HiPE is disabled)
+   #+BEGIN_SRC sh
+   make troute f=/path/to/produced/trace e=<exchange-name> r=<routing-key>
+   #+END_SRC
+
+   For cases when HiPE is enabled, running the second command is also necessary:
+   #+BEGIN_SRC
+   make tdebug d=/path/to/dump/directory/ e=<exchange-name> r=<routing-key>
+   #+END_SRC
+
+   Hopefully these 2 commands will collect enough information to debug
+   the root cause of the routing issue.
